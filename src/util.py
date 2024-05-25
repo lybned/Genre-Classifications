@@ -29,6 +29,11 @@ from sklearn.model_selection import train_test_split, cross_val_score, GridSearc
 from sklearn.metrics import f1_score
 import seaborn as sns
 
+
+def tokenize_function(examples):
+    return tokenizer(examples['text'], padding="max_length", truncation=True)
+
+
 def doc_vectorizer(tokens, model):
     vectors = [model.wv[token] for token in tokens if token in model.wv]
 
@@ -43,18 +48,18 @@ def remove_punctuation(text):
 # Define a function to remove stop words
 def remove_stopwords(text):
 	stopwordSet = set(stopwords.words('english'))
-    words = text.split()  # Split text into words
-    filtered_words = [word for word in words if word.lower() not in stopwordSet]
-    return ' '.join(filtered_words)
+	words = text.split()  # Split text into words
+	filtered_words = [word for word in words if word.lower() not in stopwordSet]
+	return ' '.join(filtered_words)
 
 class DataUtil:
 	def __init__(self):
 		pass
 		
-	def read_data(self, filepath):
-		self.dataset = pd.read_csv(filepath)
+	def read_data(filepath):
+		return pd.read_csv(filepath)
 		
-	def getPlotsGenre(self, genreList):
+	def getPlotsGenre(df, genreList):
 		filtered_df = df[df['Genre'].isin(genreList)]
 		
 		# Apply the function to the DataFrame column
@@ -65,38 +70,38 @@ class DataUtil:
 		
 		return filtered_df['Plot_Clean'], filtered_df['Genre']
 		
-	def dataSplit(self, dataList, labelList, splitRatio):
+	def dataSplit(dataList, labelList, splitRatio):
 		return train_test_split(dataList, labelList, test_size=splitRatio, random_state=42)
 			
 class RandomForestUtil:
 	def __init__():
 		pass
 		
-	def getRandomForestModel(self, n):
+	def getRandomForestModel(n):
 		return RandomForestClassifier(n_estimators=n, random_state=42)
 	  
 	  
-	def fitModel(self,model,data,label):
-        model.fit(data, labels)
-        return model
-	
+	def fitModel(model,data,label):
+		model.fit(data, label)
+		return model
+
 
 class ResultUtil:
 	def __init__():
 		pass
 		
-	def getF1Score(self, model, X_test,y_test):
+	def getF1Score(model, X_test,y_test):
 		# Evaluate the model
-		y_pred = rf_model.predict(X_test)
+		y_pred = model.predict(X_test)
 
 		# Calculate weighted F1-score
 		f1 = f1_score(y_test, y_pred, average='weighted')
 		return f1
 		
-	def crossValidation(self, model, X_train, y_train, cv):
+	def crossValidation(model, X_train, y_train, cv):
 		return cross_val_score(model, X_train, y_train, cv=cv, scoring='f1_weighted')
 		
-	def gridSearch(self, model, cv, X_train, y_train):
+	def gridSearch(model, cv, X_train, y_train):
 		# Define parameter grid for GridSearch
 		param_grid = {
 		  'n_estimators': [100, 200, 300],
@@ -106,23 +111,90 @@ class ResultUtil:
 		}
 		
 		# Create a GridSearchCV object
-		grid_search = GridSearchCV(estimator=rf_model, param_grid=param_grid, 
-								cv=5, scoring='f1_weighted', n_jobs=-1)
+		grid_search = GridSearchCV(estimator=model, param_grid=param_grid, 
+								cv=cv, scoring='f1_weighted', n_jobs=-1)
 
 		# Fit the grid search to the data
 		grid_search.fit(X_train, y_train)
 		
 		return grid_search
+		
+class TFIDFEncoding:
+	def __init__():
+		pass
+		
+	def encodeData(data):
+		tfidf_vectorizer = TfidfVectorizer()
+		return tfidf_vectorizer.fit_transform(data)
+		
 	
 class Word2VecEncoding:
 	def __init__():
 		pass
 		
-	def trainWord2VecModel(self,textList):
+	def trainWord2VecModel(textList):
 		textListToken = [word_tokenize(text) for text in textList]
 		word2vec_model = Word2Vec(textListToken, window=5, min_count=1, workers=4)
-		return word2vec_model
+		return word2vec_model, textListToken
 		
-	def Word2VecEncode(self,TokenList, model):
+	def Word2VecEncode(TokenList, model):
 		trainingData = [doc_vectorizer(tokens, model) for tokens in TokenList]
 		return trainingData
+		
+		
+class DistillBertUtil:
+	def __init__():
+		pass
+		
+	def getTokenizer():
+		tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+		return tokenizer
+		
+	def getDistillBertData(texts, genres, tokenizer):
+		# Create a Dataset
+		data = {'text': texts, 'label': genres}
+		dataset = Dataset.from_dict(data)
+
+
+		# Encode the labels
+		labels = ClassLabel(names=list(set(genres)))
+		dataset = dataset.map(lambda examples: {'label': labels.str2int(examples['label'])})
+		
+		tokenized_datasets = dataset.map(tokenize_function, batched=True)
+		
+		tokenized_datasets = tokenized_datasets.train_test_split(test_size=0.2)
+		train_dataset = tokenized_datasets['train']
+		test_dataset = tokenized_datasets['test']
+		
+		return train_dataset, test_dataset
+		
+	def getDistillBert(labels):
+		model_2 = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=labels)
+		return model_2
+		
+	def trainModel(model,train_dataset, test_dataset, tokenizer):
+		# Training arguments
+		training_args = TrainingArguments(
+			output_dir='./results',
+			evaluation_strategy="epoch",
+			learning_rate=2e-5,
+			per_device_train_batch_size=64,
+			per_device_eval_batch_size=64,
+			num_train_epochs=3,
+			weight_decay=0.01,
+		)
+
+		# Trainer
+		data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
+		trainer = Trainer(
+			model=model_2,
+			args=training_args,
+			train_dataset=train_dataset,
+			eval_dataset=test_dataset,
+			tokenizer=tokenizer,
+			data_collator=data_collator,
+		)
+
+		# Train the model
+		trainer.train()
+		
