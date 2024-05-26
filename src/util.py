@@ -18,7 +18,6 @@ from sklearn.metrics import confusion_matrix
 from gensim.models import Word2Vec
 from gensim.models import FastText
 import gensim.downloader
-from transformers import GPT2Tokenizer, GPT2ForSequenceClassification, GPT2Model
 from transformers import Trainer, TrainingArguments
 from sklearn.metrics import accuracy_score
 import numpy as np
@@ -28,10 +27,10 @@ from tqdm import tqdm
 from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
 from sklearn.metrics import f1_score
 import seaborn as sns
+from datasets import Dataset, ClassLabel
+from transformers import DistilBertTokenizer, DistilBertForSequenceClassification, Trainer, TrainingArguments, DataCollatorWithPadding
+from transformers import BertTokenizer, BertForMaskedLM, BertForSequenceClassification
 
-
-def tokenize_function(examples):
-    return tokenizer(examples['text'], padding="max_length", truncation=True)
 
 
 def doc_vectorizer(tokens, model):
@@ -151,6 +150,8 @@ class DistillBertUtil:
 		return tokenizer
 		
 	def getDistillBertData(texts, genres, tokenizer):
+		#tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+		print(tokenizer)
 		# Create a Dataset
 		data = {'text': texts, 'label': genres}
 		dataset = Dataset.from_dict(data)
@@ -160,6 +161,9 @@ class DistillBertUtil:
 		labels = ClassLabel(names=list(set(genres)))
 		dataset = dataset.map(lambda examples: {'label': labels.str2int(examples['label'])})
 		
+		def tokenize_function(examples):
+			return tokenizer(examples['text'], truncation=True)
+			
 		tokenized_datasets = dataset.map(tokenize_function, batched=True)
 		
 		tokenized_datasets = tokenized_datasets.train_test_split(test_size=0.2)
@@ -187,7 +191,7 @@ class DistillBertUtil:
 		# Trainer
 		data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 		trainer = Trainer(
-			model=model_2,
+			model=model,
 			args=training_args,
 			train_dataset=train_dataset,
 			eval_dataset=test_dataset,

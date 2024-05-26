@@ -38,7 +38,7 @@ if __name__ == "__main__":
 	plotListWord2Vec = Word2VecEncoding.Word2VecEncode(tokenizedList,Word2VecModel)
 	randomForestTrainTest(plotListWord2Vec,genreList)
 	'''
-	tokenizer = DistillBertUtil.getTokenizer
+	tokenizer = DistillBertUtil.getTokenizer()
 	trainData, testData = DistillBertUtil.getDistillBertData(plotList, genreList, tokenizer)
 	bertModel = DistillBertUtil.getDistillBert(3)
 	print("Start Training")
