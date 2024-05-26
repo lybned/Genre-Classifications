@@ -28,7 +28,7 @@ if __name__ == "__main__":
 	#print("Finished Reading Data")
 
 	plotList, genreList = DataUtil.getPlotsGenre(d,genre_List)
-	'''
+
 	print("Random Forest Models with Word2Vec")		
 	plotListEncoded = TFIDFEncoding.encodeData(plotList)
 	randomForestTrainTest(plotListEncoded, genreList)
@@ -37,7 +37,7 @@ if __name__ == "__main__":
 	Word2VecModel, tokenizedList = Word2VecEncoding.trainWord2VecModel(plotList)
 	plotListWord2Vec = Word2VecEncoding.Word2VecEncode(tokenizedList,Word2VecModel)
 	randomForestTrainTest(plotListWord2Vec,genreList)
-	'''
+
 	tokenizer = DistillBertUtil.getTokenizer()
 	trainData, testData = DistillBertUtil.getDistillBertData(plotList, genreList, tokenizer)
 	bertModel = DistillBertUtil.getDistillBert(3)
