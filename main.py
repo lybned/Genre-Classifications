@@ -1,6 +1,18 @@
 from src.util import *
 from src.config import *
 
+# main.py
+#import sys
+#import os
+
+# Add the src directory to the system path
+#sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+
+from src.DistillBert.util import *
+from src.RandomForest.util import *
+from src.TFIDF.util import *
+from src.Word2Vec.util import *
+
 def randomForestTrainTest(plotList, genreList):
 	
 	X_train, X_test, y_train, y_test = DataUtil.dataSplit(plotList, genreList, splitRatio)

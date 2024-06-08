@@ -71,18 +71,7 @@ class DataUtil:
 		
 	def dataSplit(dataList, labelList, splitRatio):
 		return train_test_split(dataList, labelList, test_size=splitRatio, random_state=42)
-			
-class RandomForestUtil:
-	def __init__():
-		pass
-		
-	def getRandomForestModel(n):
-		return RandomForestClassifier(n_estimators=n, random_state=42)
-	  
-	  
-	def fitModel(model,data,label):
-		model.fit(data, label)
-		return model
+
 
 
 class ResultUtil:
@@ -118,87 +107,4 @@ class ResultUtil:
 		
 		return grid_search
 		
-class TFIDFEncoding:
-	def __init__():
-		pass
-		
-	def encodeData(data):
-		tfidf_vectorizer = TfidfVectorizer()
-		return tfidf_vectorizer.fit_transform(data)
-		
-	
-class Word2VecEncoding:
-	def __init__():
-		pass
-		
-	def trainWord2VecModel(textList):
-		textListToken = [word_tokenize(text) for text in textList]
-		word2vec_model = Word2Vec(textListToken, window=5, min_count=1, workers=4)
-		return word2vec_model, textListToken
-		
-	def Word2VecEncode(TokenList, model):
-		trainingData = [doc_vectorizer(tokens, model) for tokens in TokenList]
-		return trainingData
-		
-		
-class DistillBertUtil:
-	def __init__():
-		pass
-		
-	def getTokenizer():
-		tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-		return tokenizer
-		
-	def getDistillBertData(texts, genres, tokenizer):
-		#tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-		print(tokenizer)
-		# Create a Dataset
-		data = {'text': texts, 'label': genres}
-		dataset = Dataset.from_dict(data)
 
-
-		# Encode the labels
-		labels = ClassLabel(names=list(set(genres)))
-		dataset = dataset.map(lambda examples: {'label': labels.str2int(examples['label'])})
-		
-		def tokenize_function(examples):
-			return tokenizer(examples['text'], truncation=True)
-			
-		tokenized_datasets = dataset.map(tokenize_function, batched=True)
-		
-		tokenized_datasets = tokenized_datasets.train_test_split(test_size=0.2)
-		train_dataset = tokenized_datasets['train']
-		test_dataset = tokenized_datasets['test']
-		
-		return train_dataset, test_dataset
-		
-	def getDistillBert(labels):
-		model_2 = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=labels)
-		return model_2
-		
-	def trainModel(model,train_dataset, test_dataset, tokenizer):
-		# Training arguments
-		training_args = TrainingArguments(
-			output_dir='./results',
-			evaluation_strategy="epoch",
-			learning_rate=2e-5,
-			per_device_train_batch_size=64,
-			per_device_eval_batch_size=64,
-			num_train_epochs=3,
-			weight_decay=0.01,
-		)
-
-		# Trainer
-		data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
-		trainer = Trainer(
-			model=model,
-			args=training_args,
-			train_dataset=train_dataset,
-			eval_dataset=test_dataset,
-			tokenizer=tokenizer,
-			data_collator=data_collator,
-		)
-
-		# Train the model
-		trainer.train()
-		
