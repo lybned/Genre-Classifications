@@ -30,7 +30,7 @@ import seaborn as sns
 from datasets import Dataset, ClassLabel
 from transformers import DistilBertTokenizer, DistilBertForSequenceClassification, Trainer, TrainingArguments, DataCollatorWithPadding
 from transformers import BertTokenizer, BertForMaskedLM, BertForSequenceClassification
-
+from nltk.tag import pos_tag
 
 
 def doc_vectorizer(tokens, model):
@@ -50,6 +50,18 @@ def remove_stopwords(text):
 	words = text.split()  # Split text into words
 	filtered_words = [word for word in words if word.lower() not in stopwordSet]
 	return ' '.join(filtered_words)
+	
+def filter_adjectives_nouns(word_list):
+    #print(word_list)
+    word_list = word_tokenize(word_list)
+        
+    # Part-of-speech tagging
+    pos_tags = nltk.pos_tag(word_list)
+    
+    # Filter to keep only adjectives and nouns
+    filtered_words = [word for word, pos in pos_tags if pos.startswith('JJ')or pos.startswith('NN')] #
+    
+    return ' '.join(filtered_words)
 
 class DataUtil:
 	def __init__(self):
@@ -67,7 +79,12 @@ class DataUtil:
 		# Apply the function to the DataFrame column
 		filtered_df['Plot_Clean'] = filtered_df['Plot_Clean'].apply(remove_stopwords)
 		
-		return filtered_df['Plot_Clean'], filtered_df['Genre']
+		# Apply the function to the DataFrame column
+		filtered_df['Plot_Clean'] = filtered_df['Plot_Clean'].apply(filter_adjectives_nouns)
+		
+		return filtered_df
+		
+		#return filtered_df['Plot_Clean'], filtered_df['Genre']
 		
 	def dataSplit(dataList, labelList, splitRatio):
 		return train_test_split(dataList, labelList, test_size=splitRatio, random_state=42)

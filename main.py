@@ -12,6 +12,7 @@ from src.DistillBert.util import *
 from src.RandomForest.util import *
 from src.TFIDF.util import *
 from src.Word2Vec.util import *
+from src.Recommender.util import *
 
 def randomForestTrainTest(plotList, genreList):
 	
@@ -32,26 +33,37 @@ def randomForestTrainTest(plotList, genreList):
 	# Best parameters and best score
 	print("Best Parameters:", gridSearchResult.best_params_)
 	print("Best Weighted F1-Score from Grid Search:", gridSearchResult.best_score_)	
+	return randomForestModel
 
 if __name__ == "__main__":
 	print("Running Main")
 	d = DataUtil.read_data(data_dir)
 	
-	#print("Finished Reading Data")
 
-	plotList, genreList = DataUtil.getPlotsGenre(d,genre_List)
-
-	print("Random Forest Models with Word2Vec")		
+	# Get the returned data
+	filtered_df = DataUtil.getPlotsGenre(d,genre_List)
+	plotList = filtered_df['Plot_Clean']
+	genreList = filtered_df['Genre']
+	'''
+	print("Finished Reading Data")	
+	
+	
+	print("Random Forest Models with TF-IDF")		
 	plotListEncoded = TFIDFEncoding.encodeData(plotList)
-	randomForestTrainTest(plotListEncoded, genreList)
+	modelTFIDF = randomForestTrainTest(plotListEncoded, genreList)
 
-	print("Random Forest Models with TF-IDF")	
+	print("Random Forest Models with Word2Vec")	
 	Word2VecModel, tokenizedList = Word2VecEncoding.trainWord2VecModel(plotList)
 	plotListWord2Vec = Word2VecEncoding.Word2VecEncode(tokenizedList,Word2VecModel)
-	randomForestTrainTest(plotListWord2Vec,genreList)
+	modelWord2Vec = randomForestTrainTest(plotListWord2Vec,genreList)
 
 	tokenizer = DistillBertUtil.getTokenizer()
 	trainData, testData = DistillBertUtil.getDistillBertData(plotList, genreList, tokenizer)
 	bertModel = DistillBertUtil.getDistillBert(3)
 	print("Start Training")
 	DistillBertUtil.trainModel(bertModel, trainData, testData, tokenizer)
+	'''
+	matrix = RecommenderSystem.getRecommenderMatrix(filtered_df)
+	movieIndex = int(input("Enter the index of the movie in the dataset: "))
+	result = recommend_movies(movieIndex, matrix, filtered_df, num_recommendations=5)
+	print(result)
